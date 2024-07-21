@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
+import 'package:intl/intl.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 void main() {
   runApp(MyApp());
@@ -10,32 +11,59 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Car Price Prediction',
+      title: 'Car Price Predictor',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(),
+      home: CarPricePredictor(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
+class CarPricePredictor extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _CarPricePredictorState createState() => _CarPricePredictorState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _CarPricePredictorState extends State<CarPricePredictor> {
   final _formKey = GlobalKey<FormState>();
-  final _yearController = TextEditingController();
-  final _conditionController = TextEditingController();
-  final _mileageController = TextEditingController();
-  final _engineSizeController = TextEditingController();
-  final _fuelController = TextEditingController();
-  final _transmissionController = TextEditingController();
-  final _makeController = TextEditingController();
-  final _buildController = TextEditingController();
-
+  DateTime _selectedDate = DateTime.now();
+  String _condition = 'Nigerian Used';
+  double _mileage = 50000;
+  double _engineSize = 2000;
+  String _fuel = 'Petrol';
+  String _transmission = 'Automatic';
+  String _make = 'Toyota';
+  String _build = 'SUV';
   String _predictedPrice = '';
+
+  // Make logos and build images mapping
+  final Map<String, String> _makeLogos = {
+    'Toyota': 'assets/toyota_logo.png',
+    'Honda': 'assets/honda_logo.png',
+    'Lexus': 'assets/lexus_logo.png',
+    'Mercedes-Benz': 'assets/mercedes_logo.png',
+    'BMW': 'assets/bmw_logo.png',
+  };
+
+  final Map<String, String> _buildImages = {
+    'SUV': 'assets/suv_image.png',
+    'Sedan': 'assets/sedan_image.png',
+    'Coupe': 'assets/coupe_image.png',
+  };
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedDate,
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != _selectedDate)
+      setState(() {
+        _selectedDate = picked;
+      });
+  }
 
   Future<void> _predictPrice() async {
     if (_formKey.currentState!.validate()) {
@@ -45,14 +73,14 @@ class _MyHomePageState extends State<MyHomePage> {
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body: jsonEncode(<String, dynamic>{
-          'Year_of_manufacture': int.parse(_yearController.text),
-          'Condition': _conditionController.text,
-          'Mileage': int.parse(_mileageController.text),
-          'Engine_Size': int.parse(_engineSizeController.text),
-          'Fuel': _fuelController.text,
-          'Transmission': _transmissionController.text,
-          'Make': _makeController.text,
-          'Build': _buildController.text,
+          'Year_of_manufacture': _selectedDate.year,
+          'Condition': _condition,
+          'Mileage': _mileage.toInt(),
+          'Engine_Size': _engineSize.toInt(),
+          'Fuel': _fuel,
+          'Transmission': _transmission,
+          'Make': _make,
+          'Build': _build,
         }),
       );
 
@@ -62,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
         });
       } else {
         setState(() {
-          _predictedPrice = 'Error: Unable to fetch prediction';
+          _predictedPrice = 'Error: Unable to get prediction';
         });
       }
     }
@@ -72,7 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Car Price Prediction'),
+        title: Text('Car Price Predictor'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -80,98 +108,158 @@ class _MyHomePageState extends State<MyHomePage> {
           key: _formKey,
           child: ListView(
             children: <Widget>[
-              TextFormField(
-                controller: _yearController,
-                decoration: InputDecoration(labelText: 'Year of Manufacture'),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the year of manufacture';
-                  }
-                  return null;
-                },
+              // Year of Manufacture (Date Picker)
+              ListTile(
+                title: Text("Year of Manufacture: ${DateFormat('yyyy').format(_selectedDate)}"),
+                trailing: Icon(Icons.calendar_today),
+                onTap: () => _selectDate(context),
               ),
-              TextFormField(
-                controller: _conditionController,
+              // Condition Dropdown
+              DropdownButtonFormField<String>(
+                value: _condition,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _condition = newValue!;
+                  });
+                },
+                items: <String>['Nigerian Used', 'Foreign Used']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
                 decoration: InputDecoration(labelText: 'Condition'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the condition';
-                  }
-                  return null;
-                },
               ),
-              TextFormField(
-                controller: _mileageController,
-                decoration: InputDecoration(labelText: 'Mileage'),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the mileage';
-                  }
-                  return null;
-                },
+              // Mileage Range Slider
+              ListTile(
+                title: Text('Mileage: ${_mileage.toInt()} km'),
+                subtitle: Slider(
+                  value: _mileage,
+                  min: 0,
+                  max: 500000,
+                  divisions: 100,
+                  label: _mileage.round().toString(),
+                  onChanged: (double value) {
+                    setState(() {
+                      _mileage = value;
+                    });
+                  },
+                ),
               ),
-              TextFormField(
-                controller: _engineSizeController,
-                decoration: InputDecoration(labelText: 'Engine Size'),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the engine size';
-                  }
-                  return null;
-                },
+              // Engine Size Range Slider
+              ListTile(
+                title: Text('Engine Size: ${_engineSize.toInt()} cc'),
+                subtitle: Slider(
+                  value: _engineSize,
+                  min: 500,
+                  max: 5000,
+                  divisions: 100,
+                  label: _engineSize.round().toString(),
+                  onChanged: (double value) {
+                    setState(() {
+                      _engineSize = value;
+                    });
+                  },
+                ),
               ),
-              TextFormField(
-                controller: _fuelController,
+              // Fuel Dropdown
+              DropdownButtonFormField<String>(
+                value: _fuel,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _fuel = newValue!;
+                  });
+                },
+                items: <String>['Petrol', 'Diesel', 'Hybrid', 'Electric']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
                 decoration: InputDecoration(labelText: 'Fuel'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the fuel type';
-                  }
-                  return null;
-                },
               ),
-              TextFormField(
-                controller: _transmissionController,
+              // Transmission Dropdown
+              DropdownButtonFormField<String>(
+                value: _transmission,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _transmission = newValue!;
+                  });
+                },
+                items: <String>['Automatic', 'Manual']
+                    .map<DropdownMenuItem<String>>((String value) {
+                  return DropdownMenuItem<String>(
+                    value: value,
+                    child: Text(value),
+                  );
+                }).toList(),
                 decoration: InputDecoration(labelText: 'Transmission'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the transmission type';
-                  }
-                  return null;
-                },
               ),
-              TextFormField(
-                controller: _makeController,
+              // Make Dropdown with Logos
+              DropdownButtonFormField<String>(
+                value: _make,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _make = newValue!;
+                  });
+                },
+                items: _makeLogos.keys.map<DropdownMenuItem<String>>((String key) {
+                  return DropdownMenuItem<String>(
+                    value: key,
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          _makeLogos[key]!,
+                          width: 24,
+                          height: 24,
+                        ),
+                        SizedBox(width: 8),
+                        Text(key),
+                      ],
+                    ),
+                  );
+                }).toList(),
                 decoration: InputDecoration(labelText: 'Make'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the make';
-                  }
-                  return null;
-                },
               ),
-              TextFormField(
-                controller: _buildController,
+              // Build Dropdown with Images
+              DropdownButtonFormField<String>(
+                value: _build,
+                onChanged: (String? newValue) {
+                  setState(() {
+                    _build = newValue!;
+                  });
+                },
+                items: _buildImages.keys.map<DropdownMenuItem<String>>((String key) {
+                  return DropdownMenuItem<String>(
+                    value: key,
+                    child: Row(
+                      children: [
+                        Image.asset(
+                          _buildImages[key]!,
+                          width: 24,
+                          height: 24,
+                        ),
+                        SizedBox(width: 8),
+                        Text(key),
+                      ],
+                    ),
+                  );
+                }).toList(),
                 decoration: InputDecoration(labelText: 'Build'),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter the build type';
-                  }
-                  return null;
-                },
               ),
+              // Predict Button
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _predictPrice,
                 child: Text('Predict'),
               ),
+              // Predicted Price Display
               SizedBox(height: 20),
               Text(
-                'Predicted Price: $_predictedPrice',
-                style: TextStyle(fontSize: 20),
+                _predictedPrice.isNotEmpty ? 'Predicted Price: $_predictedPrice' : '',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               ),
             ],
           ),
