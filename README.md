@@ -4,7 +4,7 @@ This Flutter app predicts car prices using a machine learning model hosted on a 
 
 ## API Endpoint
 
-The API endpoint for prediction is publicly available at: `https://car-price-model.onrender.com/predict`
+The API endpoint for prediction is publicly available at: https://car-price-model.onrender.com/predict
 This API predicts wine quality based on multiple informations e.g Year of Manufacture, Condition, Build, Mileage etc. 
 
 <hr>
