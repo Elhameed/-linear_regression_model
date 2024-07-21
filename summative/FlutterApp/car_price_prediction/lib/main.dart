@@ -27,6 +27,7 @@ class CarPricePredictor extends StatefulWidget {
 
 class _CarPricePredictorState extends State<CarPricePredictor> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _yearController = TextEditingController();
   DateTime _selectedDate = DateTime.now();
   String _condition = 'Nigerian Used';
   double _mileage = 50000;
@@ -62,6 +63,7 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
     if (picked != null && picked != _selectedDate)
       setState(() {
         _selectedDate = picked;
+        _yearController.text = DateFormat('yyyy').format(picked);
       });
   }
 
@@ -73,7 +75,7 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
           'Content-Type': 'application/json; charset=UTF-8',
         },
         body: jsonEncode(<String, dynamic>{
-          'Year_of_manufacture': _selectedDate.year,
+          'Year_of_manufacture': int.parse(_yearController.text),
           'Condition': _condition,
           'Mileage': _mileage.toInt(),
           'Engine_Size': _engineSize.toInt(),
@@ -108,12 +110,27 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
           key: _formKey,
           child: ListView(
             children: <Widget>[
-              // Year of Manufacture (Date Picker)
+              Text('Car Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              SizedBox(height: 10),
+              // Year of Manufacture (Date Picker and Text Input)
               ListTile(
-                title: Text("Year of Manufacture: ${DateFormat('yyyy').format(_selectedDate)}"),
-                trailing: Icon(Icons.calendar_today),
-                onTap: () => _selectDate(context),
+                title: TextFormField(
+                  controller: _yearController,
+                  decoration: InputDecoration(labelText: "Year of Manufacture"),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter year of manufacture';
+                    }
+                    return null;
+                  },
+                ),
+                trailing: IconButton(
+                  icon: Icon(Icons.calendar_today),
+                  onPressed: () => _selectDate(context),
+                ),
               ),
+              SizedBox(height: 10),
               // Condition Dropdown
               DropdownButtonFormField<String>(
                 value: _condition,
@@ -131,6 +148,7 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
                 }).toList(),
                 decoration: InputDecoration(labelText: 'Condition'),
               ),
+              SizedBox(height: 10),
               // Mileage Range Slider
               ListTile(
                 title: Text('Mileage: ${_mileage.toInt()} km'),
@@ -147,6 +165,7 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
                   },
                 ),
               ),
+              SizedBox(height: 10),
               // Engine Size Range Slider
               ListTile(
                 title: Text('Engine Size: ${_engineSize.toInt()} cc'),
@@ -163,6 +182,9 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
                   },
                 ),
               ),
+              SizedBox(height: 20),
+              Text('Additional Details', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              SizedBox(height: 10),
               // Fuel Dropdown
               DropdownButtonFormField<String>(
                 value: _fuel,
@@ -180,6 +202,7 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
                 }).toList(),
                 decoration: InputDecoration(labelText: 'Fuel'),
               ),
+              SizedBox(height: 10),
               // Transmission Dropdown
               DropdownButtonFormField<String>(
                 value: _transmission,
@@ -197,6 +220,7 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
                 }).toList(),
                 decoration: InputDecoration(labelText: 'Transmission'),
               ),
+              SizedBox(height: 10),
               // Make Dropdown with Logos
               DropdownButtonFormField<String>(
                 value: _make,
@@ -212,8 +236,8 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
                       children: [
                         Image.asset(
                           _makeLogos[key]!,
-                          width: 24,
-                          height: 24,
+                          width: 36,
+                          height: 36,
                         ),
                         SizedBox(width: 8),
                         Text(key),
@@ -223,6 +247,7 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
                 }).toList(),
                 decoration: InputDecoration(labelText: 'Make'),
               ),
+              SizedBox(height: 10),
               // Build Dropdown with Images
               DropdownButtonFormField<String>(
                 value: _build,
@@ -238,8 +263,8 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
                       children: [
                         Image.asset(
                           _buildImages[key]!,
-                          width: 24,
-                          height: 24,
+                          width: 46,
+                          height: 46,
                         ),
                         SizedBox(width: 8),
                         Text(key),
@@ -249,14 +274,14 @@ class _CarPricePredictorState extends State<CarPricePredictor> {
                 }).toList(),
                 decoration: InputDecoration(labelText: 'Build'),
               ),
-              // Predict Button
               SizedBox(height: 20),
+              // Predict Button
               ElevatedButton(
                 onPressed: _predictPrice,
                 child: Text('Predict'),
               ),
-              // Predicted Price Display
               SizedBox(height: 20),
+              // Predicted Price Display
               Text(
                 _predictedPrice.isNotEmpty ? 'Predicted Price: $_predictedPrice' : '',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
